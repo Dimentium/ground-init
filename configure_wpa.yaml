@@ -1,0 +1,77 @@
+#cloud-config
+
+# Sets up Wi-Fi via wpa_supplicant
+
+package_upgrade: true
+
+packages:
+  - isc-dhcp-client
+
+write_files:
+  - path: /etc/systemd/system/wpa_supplicant.service
+    content: |
+      [Unit]
+      Description=WPA supplicant
+      Before=network.target
+
+      [Service]
+      ExecStart=/usr/sbin/wpa_supplicant -B -c /etc/wpa_supplicant/wpa_supplicant.conf -i wlan0
+      ExecReload=/bin/kill -HUP $MAINPID
+      Restart=always
+      Type=forking
+
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /etc/systemd/system/dhclient.service
+    content: |
+      [Unit]
+      Description=DHCP Client
+      After=wpa_supplicant.service
+      Requires=wpa_supplicant.service
+
+      [Service]
+      ExecStart=/sbin/dhclient wlan0
+      ExecStop=/sbin/dhclient -r wlan0
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /usr/local/bin/wpa
+    content: |
+      #!/bin/bash
+
+      # Check if exactly one argument is provided
+      if [ "$#" -ne 1 ]; then
+          echo "Usage: $0 <wpa profile name>"
+          exit 1
+      fi
+
+      # Extract the argument and append .txt extension
+      FILENAME="/etc/wpa_supplicant/$1.conf"
+
+      # Check if the file exists
+      if [ -f "$FILENAME" ]; then
+          # Print the contents of the file
+          sudo ln -sf $FILENAME /etc/wpa_supplicant/wpa_supplicant.conf
+        sudo systemctl restart wpa_supplicant
+      else
+          echo "Profile not found: $FILENAME"
+          exit 1
+      fi
+
+  - path: /etc/wpa_supplicant/home.conf
+    content: |
+      network={
+              ssid="HOMESID"
+              psk=**********
+      }
+
+runcmd:
+  - chmod +x /usr/local/bin/wpa
+  - wpa home
+  - systemctl enable wpa_supplicant
+  - systemctl start wpa_supplicant
+  - systemctl enable dhclient
+  - systemctl start dhclient

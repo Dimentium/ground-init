@@ -1,0 +1,12 @@
+#cloud-config
+
+package_upgrade: true
+
+packages:
+  - syncthing
+
+runcmd:
+  # set "me" to the username that has to run syncthing
+  - loginctl enable-linger dk
+  - su --login -c "XDG_RUNTIME_DIR=/run/user/`id -u` systemctl --user enable syncthing.service" dk
+  - su --login -c "XDG_RUNTIME_DIR=/run/user/`id -u` systemctl --user start syncthing.service" dk

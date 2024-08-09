@@ -1,0 +1,40 @@
+#cloud-config
+
+# This file is meant to set up syncthing and tailscale on a bare Debian 12 LXC )
+
+package_upgrade: true
+
+packages:
+  - isc-dhcp-client
+  - xz-utils
+  - git
+  - lf
+  - duf
+  - ncdu
+  - bat
+  - tldr
+  - ntp
+  - tmux
+  - htop
+  - vim
+  - curl
+  - wget
+  - sudo
+  - openssh-server
+  - net-tools
+  # for enabling systemd
+  - dbus-user-session
+
+runcmd:
+  - echo 'deb http://download.opensuse.org/repositories/shells:/fish:/release:/3/Debian_12/ /' | sudo tee /etc/apt/sources.list.d/shells:fish:release:3.list
+  - curl -fsSL https://download.opensuse.org/repositories/shells:fish:release:3/Debian_12/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/shells_fish_release_3.gpg > /dev/null
+  - apt update
+  - apt install fish
+  - chsh -s /usr/bin/fish dk
+
+build:
+  root: ${HOME}
+  repositories:
+    - url: https://github.com/junegunn/fzf.git
+      commands:
+        - ./install --all --xdg
